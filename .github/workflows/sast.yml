@@ -80,8 +80,7 @@ jobs:
             bandit-report.sarif
             bandit-timing.json
 
-
-      sonarqube-scan:
+  sonarqube-scan:
     name: SonarQube SAST Benchmark
     runs-on: ubuntu-latest
     steps:
