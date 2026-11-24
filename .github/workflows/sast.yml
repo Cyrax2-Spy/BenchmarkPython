@@ -79,3 +79,38 @@ jobs:
             bandit-report.json
             bandit-report.sarif
             bandit-timing.json
+
+
+      sonarqube-scan:
+    name: SonarQube SAST Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run SonarQube Scan & Measure Time
+        run: |
+          START_TIME=$(date +%s.%N)
+          echo "Running SonarQube scan..."
+          END_TIME=$(date +%s.%N)
+          DURATION=$(python3 -c "print(round($END_TIME - $START_TIME, 3))")
+          echo "{\"tool\": \"sonarqube\", \"repo\": \"$GITHUB_REPOSITORY\", \"duration_seconds\": $DURATION}" > sonarqube-timing.json
+          cat sonarqube-timing.json
+
+      - name: Scan with SonarQube Scanner Action
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ github.event.repository.name }}
+
+      - name: Upload SonarQube Timing Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonarqube-benchmark-results
+          path: |
+            sonarqube-timing.json
