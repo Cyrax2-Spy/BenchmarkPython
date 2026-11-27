@@ -89,14 +89,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run SonarQube Scan & Measure Time
+      - name: Record SonarQube Start Time
         run: |
           START_TIME=$(date +%s.%N)
-          echo "Running SonarQube scan..."
-          END_TIME=$(date +%s.%N)
-          DURATION=$(python3 -c "print(round($END_TIME - $START_TIME, 3))")
-          echo "{\"tool\": \"sonarqube\", \"repo\": \"$GITHUB_REPOSITORY\", \"duration_seconds\": $DURATION}" > sonarqube-timing.json
-          cat sonarqube-timing.json
+          echo "SONAR_START_TIME=$START_TIME" >> "$GITHUB_ENV"
 
       - name: Scan with SonarQube Scanner Action
         uses: SonarSource/sonarqube-scan-action@v7
@@ -105,9 +101,19 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=${{ github.event.repository.name }}
+            -Dsonar.organization=cyrax2-spy
+            -Dsonar.projectKey=Cyrax2-Spy_BenchmarkPython
+
+      - name: Measure SonarQube Execution Time
+        if: always()
+        run: |
+          END_TIME=$(date +%s.%N)
+          DURATION=$(python3 -c "print(round($END_TIME - float('${{ env.SONAR_START_TIME }}'), 3))")
+          echo "{\"tool\": \"sonarqube\", \"repo\": \"$GITHUB_REPOSITORY\", \"duration_seconds\": $DURATION}" > sonarqube-timing.json
+          cat sonarqube-timing.json
 
       - name: Upload SonarQube Timing Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sonarqube-benchmark-results
